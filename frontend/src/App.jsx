@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 
 const numericFields = [
   { name: "age", label: "Edad", min: 18, max: 120, step: 1 },
@@ -19,7 +19,7 @@ const numericFields = [
   { name: "home_owner", label: "Propietario (0/1)", min: 0, max: 1, step: 1 },
   { name: "small_biz_owner", label: "Micronegocio (0/1)", min: 0, max: 1, step: 1 },
   { name: "owns_car", label: "Tiene auto (0/1)", min: 0, max: 1, step: 1 },
-  { name: "wa_groups", label: "Participa en WA grupos (0-5)", min: 0, max: 5, step: 1 },
+  { name: "wa_groups", label: "Participa en grupos (0-5)", min: 0, max: 5, step: 1 },
   { name: "refused_count", label: "Respuestas rehusadas", min: 0, max: 10, step: 1 },
   { name: "attention_check", label: "Atención (0/1)", min: 0, max: 1, step: 1 },
   { name: "will_turnout", label: "Dice que votará (0/1)", min: 0, max: 1, step: 1 },
@@ -47,8 +47,9 @@ const candidateOptions = [
 ];
 
 const API_URL =
-  import.meta.env.VITE_API_URL ??
-  `${window.location.protocol}//${window.location.hostname}:8000`;
+  import.meta.env.VITE_API_URL ?? "https://voterintentionsbackend.onrender.com";
+
+const formatNumber = (value) => (value * 100).toFixed(1) + "%";
 
 export default function App() {
   const initialState = useMemo(() => {
@@ -83,39 +84,11 @@ export default function App() {
       const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          age: Number(formData.age),
-          gender: Number(formData.gender),
-          education: Number(formData.education),
-          employment_status: Number(formData.employment_status),
-          employment_sector: Number(formData.employment_sector),
-          income_bracket: Number(formData.income_bracket),
-          marital_status: Number(formData.marital_status),
-          household_size: Number(formData.household_size),
-          has_children: Number(formData.has_children),
-          urbanicity: Number(formData.urbanicity),
-          region: Number(formData.region),
-          voted_last: Number(formData.voted_last),
-          party_id_strength: Number(formData.party_id_strength),
-          union_member: Number(formData.union_member),
-          public_sector: Number(formData.public_sector),
-          home_owner: Number(formData.home_owner),
-          small_biz_owner: Number(formData.small_biz_owner),
-          owns_car: Number(formData.owns_car),
-          wa_groups: Number(formData.wa_groups),
-          refused_count: Number(formData.refused_count),
-          attention_check: Number(formData.attention_check),
-          will_turnout: Number(formData.will_turnout),
-          undecided: Number(formData.undecided),
-          preference_strength: Number(formData.preference_strength),
-          survey_confidence: Number(formData.survey_confidence),
-          tv_news_hours: Number(formData.tv_news_hours),
-          social_media_hours: Number(formData.social_media_hours),
-          trust_media: Number(formData.trust_media),
-          civic_participation: Number(formData.civic_participation),
-          job_tenure_years: Number(formData.job_tenure_years),
-        }),
+        body: JSON.stringify(
+          Object.fromEntries(
+            Object.entries(formData).map(([key, value]) => [key, Number.isNaN(Number(value)) ? value : Number(value)]),
+          ),
+        ),
       });
 
       if (!response.ok) {
@@ -131,69 +104,138 @@ export default function App() {
     }
   };
 
+  const topCandidates = result?.top_candidates ?? [];
+
   return (
-    <main>
-      <header>
-        <h1>Intención de voto - Modelo KNN</h1>
-        <p>Completa la ficha del votante y obtén la predicción del servicio de ML.</p>
+    <main className="page">
+      <header className="hero">
+        <div>
+          <p className="eyebrow">Predicción electoral · KNN</p>
+          <h1>Vincula nuevos votantes y conoce su afinidad.</h1>
+          <p className="sub">
+            Registra los indicadores sociodemográficos y políticos. El servicio de ML calcula la intención de voto con un
+            KNN calibrado en 3,000 casos reales.
+          </p>
+        </div>
+        <div className="cta-block">
+          <p>
+            API en vivo:
+            <a href="https://voterintentionsbackend.onrender.com" target="_blank" rel="noreferrer">
+              Render
+            </a>
+          </p>
+          <p>
+            Frontend:
+            <a href="https://voterintentions.vercel.app" target="_blank" rel="noreferrer">
+              Vercel
+            </a>
+          </p>
+        </div>
       </header>
 
-      <form onSubmit={handleSubmit}>
-        <section className="grid">
-          {numericFields.map((field) => (
-            <label key={field.name}>
-              <span>{field.label}</span>
-              <input
-                type="number"
-                min={field.min}
-                max={field.max}
-                step={field.step}
-                value={formData[field.name]}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-              />
-            </label>
-          ))}
-          <label>
-            <span>Preferencia principal</span>
-            <select
-              value={formData.primary_choice}
-              onChange={(e) => handleChange("primary_choice", e.target.value)}
-            >
-              {candidateOptions.map((candidate) => (
-                <option key={candidate} value={candidate}>
-                  {candidate}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Preferencia secundaria</span>
-            <select
-              value={formData.secondary_choice}
-              onChange={(e) => handleChange("secondary_choice", e.target.value)}
-            >
-              {[...candidateOptions, "Unknown"].map((candidate) => (
-                <option key={candidate} value={candidate}>
-                  {candidate}
-                </option>
-              ))}
-            </select>
-          </label>
-        </section>
-        <button type="submit" disabled={loading}>
-          {loading ? "Consultando..." : "Predecir intención"}
-        </button>
-      </form>
-
-      {error && <p className="error">⚠️ {error}</p>}
-      {result && (
-        <section className="result">
-          <p>
-            Intención estimada: <strong>{result.intended_vote}</strong>
+      <section className="layout">
+        <div className="form-column">
+          <h2>Ficha del votante</h2>
+          <p className="hint">
+            Completa cada campo numérico según su escala y selecciona las preferencias que correspondan a las opciones
+            visibles.
           </p>
-          <small>{result.confidence_note}</small>
-        </section>
-      )}
+          <form onSubmit={handleSubmit}>
+            <div className="grid">
+              {numericFields.map((field) => (
+                <label key={field.name}>
+                  <span>{field.label}</span>
+                  <input
+                    type="number"
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    value={formData[field.name]}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                  />
+                </label>
+              ))}
+              <label>
+                <span>Preferencia principal</span>
+                <select
+                  value={formData.primary_choice}
+                  onChange={(e) => handleChange("primary_choice", e.target.value)}
+                >
+                  {candidateOptions.map((candidate) => (
+                    <option key={candidate} value={candidate}>
+                      {candidate}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Preferencia secundaria</span>
+                <select
+                  value={formData.secondary_choice}
+                  onChange={(e) => handleChange("secondary_choice", e.target.value)}
+                >
+                  {[...candidateOptions, "Unknown"].map((candidate) => (
+                    <option key={candidate} value={candidate}>
+                      {candidate}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <button type="submit" disabled={loading}>
+              {loading ? "Consultando modelo..." : "Predecir intención"}
+            </button>
+            {error && <p className="error">⚠️ {error}</p>}
+          </form>
+        </div>
+
+        <aside className="result-pane">
+          <h3>Resultado y métricas</h3>
+          <ul>
+            <li>Entrenamiento balanceado + validación GroupKFold (macro F1 / balanced accuracy).</li>
+            <li>Normalización fila + PCA opcional para distancias Manhattan/Coseno.</li>
+            <li>Control de indecisos mediante umbral y análisis top‑2.</li>
+          </ul>
+
+          {result ? (
+            <div className="insights">
+              <div className="confidence-card">
+                <p>Confianza de la predicción</p>
+                <strong>{formatNumber(result.confidence ?? 0)}</strong>
+                {result.runner_up && (
+                  <span>
+                    2.º lugar: {result.runner_up.candidate} ({formatNumber(result.runner_up.probability)})
+                  </span>
+                )}
+              </div>
+
+              <div className="bars">
+                {topCandidates.map((item) => (
+                  <div key={item.candidate} className="bar-row">
+                    <span>{item.candidate}</span>
+                    <div className="bar">
+                      <div className="bar-fill" style={{ width: `${item.probability * 100}%` }} />
+                      <span className="value">{formatNumber(item.probability)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="result-card">
+                <p>Intención estimada</p>
+                <strong>{result.intended_vote}</strong>
+                <small>{result.confidence_note}</small>
+              </div>
+            </div>
+          ) : (
+            <div className="result-card ghost">
+              Completa la ficha para visualizar la predicción del modelo y las probabilidades asociadas.
+            </div>
+          )}
+        </aside>
+      </section>
+
+      <footer>By Andres Melo &amp; Thomas Cristancho – Universidad de Cundinamarca 2025</footer>
     </main>
   );
 }
