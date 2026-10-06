@@ -1,3 +1,11 @@
+<!-- technical-overview: EndDark16/ML_KNN -->
+
+**Introduccion tecnica**
+
+Pipeline reproducible de clasificacion de intencion de voto con K vecinos mas cercanos, transformadores personalizados y metricas de evaluacion. El repositorio incluye artefactos, notebooks, servicio FastAPI, frontend React y despliegue con Docker Compose.
+
+---
+
 ## Voter intention KNN stack
 
 Este repositorio contiene todo lo necesario para entrenar, evaluar y desplegar como servicio un modelo de K vecinos más cercanos que predice la intención de voto de electores usando el dataset `voter_intentions_3000.csv`.
